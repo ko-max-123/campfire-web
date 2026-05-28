@@ -18,6 +18,7 @@ const ambientAudio = new FireAudio();
 const topics = [...defaultTopics];
 const LOOP_START_SECONDS = 3;
 const LOOP_END_BUFFER_SECONDS = 1;
+const LOOP_MONITOR_INTERVAL_MS = 200;
 
 let currentIndex = -1;
 let topicTimer = null;
@@ -65,6 +66,7 @@ topicForm.addEventListener("submit", (event) => {
 });
 
 document.addEventListener("visibilitychange", () => {
+  monitorLoopPoint();
   if (!document.hidden) {
     startVideo();
   }
@@ -103,8 +105,9 @@ function startLoopMonitor() {
 
   loopMonitorStarted = true;
   video.addEventListener("loadedmetadata", seekToLoopStart);
+  video.addEventListener("timeupdate", monitorLoopPoint);
   video.addEventListener("ended", seekToLoopStart);
-  monitorLoopPoint();
+  window.setInterval(monitorLoopPoint, LOOP_MONITOR_INTERVAL_MS);
 }
 
 function monitorLoopPoint() {
@@ -114,8 +117,6 @@ function monitorLoopPoint() {
       seekToLoopStart();
     }
   }
-
-  window.requestAnimationFrame(monitorLoopPoint);
 }
 
 function seekToLoopStart() {
