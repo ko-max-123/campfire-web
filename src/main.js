@@ -1,59 +1,96 @@
-import { CampfireScene } from "./campfire.js";
-import { FireAudio } from "./audio.js";
+import { topics as defaultTopics } from "./topics.js";
 
-const canvas = document.getElementById("campfire-canvas");
-const ctx = canvas.getContext("2d");
+const video = document.getElementById("campfire-video");
+const topicCard = document.getElementById("topic-card");
+const topicTitle = document.getElementById("topic-title");
+const topicBody = document.getElementById("topic-body");
+const controlPanel = document.getElementById("control-panel");
+const panelToggle = document.getElementById("panel-toggle");
+const intervalSelect = document.getElementById("interval-select");
+const nextTopicButton = document.getElementById("next-topic");
+const topicForm = document.getElementById("topic-form");
+const topicInput = document.getElementById("topic-input");
 
-const INITIAL_INTENSITY = 0.84;
-const INITIAL_WIND = -0.22;
-const INITIAL_SMOKE = 0.72;
-const TARGET_FRAME_MS = 1000 / 45;
+const topics = [...defaultTopics];
+let currentIndex = -1;
+let topicTimer = null;
 
-const scene = new CampfireScene(canvas, ctx);
-const audio = new FireAudio();
+startVideo();
+showNextTopic();
+scheduleNextTopic();
 
-scene.setIntensity(INITIAL_INTENSITY);
-scene.setWind(INITIAL_WIND);
-scene.setSmoke(INITIAL_SMOKE);
-audio.setIntensity(INITIAL_INTENSITY);
-
-startAudio();
-window.addEventListener("pointerdown", startAudio, { once: true });
-window.addEventListener("keydown", startAudio, { once: true });
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) return;
-  startAudio();
+panelToggle.addEventListener("click", () => {
+  controlPanel.classList.toggle("is-open");
+  if (controlPanel.classList.contains("is-open")) {
+    topicInput.focus();
+  }
 });
 
-function resize() {
-  scene.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
+nextTopicButton.addEventListener("click", () => {
+  showNextTopic();
+  scheduleNextTopic();
+});
+
+intervalSelect.addEventListener("change", scheduleNextTopic);
+
+topicForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const body = topicInput.value.trim();
+  if (!body) return;
+
+  const topic = {
+    title: "追加した話題",
+    body,
+  };
+
+  topics.splice(currentIndex + 1, 0, topic);
+  currentIndex += 1;
+  showTopic(topic);
+  topicInput.value = "";
+  scheduleNextTopic();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    startVideo();
+  }
+});
+
+function startVideo() {
+  video.muted = true;
+  const playPromise = video.play();
+  if (playPromise) {
+    playPromise.catch(() => {
+      window.addEventListener("pointerdown", () => video.play(), { once: true });
+      window.addEventListener("keydown", () => video.play(), { once: true });
+    });
+  }
 }
 
-window.addEventListener("resize", resize);
-resize();
+function showNextTopic() {
+  if (topics.length === 0) return;
 
-let last = performance.now();
-function frame(now) {
-  if (now - last < TARGET_FRAME_MS) {
-    requestAnimationFrame(frame);
-    return;
-  }
-
-  const dt = Math.min((now - last) / 1000, 0.05);
-  last = now;
-  scene.update(dt);
-  scene.draw();
-  audio.update(dt);
-  requestAnimationFrame(frame);
+  currentIndex = (currentIndex + 1) % topics.length;
+  showTopic(topics[currentIndex]);
 }
-requestAnimationFrame(frame);
 
-async function startAudio() {
-  if (audio.isPlaying) return;
+function showTopic(topic) {
+  topicCard.classList.remove("is-visible");
 
-  try {
-    await audio.start();
-  } catch (error) {
-    console.warn("Audio autoplay failed.", error);
+  window.setTimeout(() => {
+    topicTitle.textContent = topic.title;
+    topicBody.textContent = topic.body;
+    topicCard.classList.add("is-visible");
+  }, 140);
+}
+
+function scheduleNextTopic() {
+  if (topicTimer) {
+    window.clearInterval(topicTimer);
   }
+
+  topicTimer = window.setInterval(() => {
+    showNextTopic();
+  }, Number(intervalSelect.value));
 }

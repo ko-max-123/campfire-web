@@ -3,13 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Campfire Photo Inspired Final</title>
+  <title>Campfire Topics</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <div class="app-shell">
-    <canvas id="campfire-canvas" aria-label="焚き火アニメーション"></canvas>
+    <video
+      id="campfire-video"
+      class="background-video"
+      src="./movie/campfire.mp4"
+      autoplay
+      muted
+      loop
+      playsinline
+      aria-label="焚き火の動画"
+    ></video>
+
+    <div class="video-layer" aria-hidden="true"></div>
+
+    <article id="topic-card" class="topic-card" aria-live="polite">
+      <div class="topic-kicker">Topic</div>
+      <h1 id="topic-title"></h1>
+      <p id="topic-body"></p>
+    </article>
+
+    <aside id="control-panel" class="control-panel" aria-label="話題コントロール">
+      <button id="panel-toggle" class="panel-toggle" type="button">
+        話題パネル
+      </button>
+
+      <div class="panel-body">
+        <label class="field">
+          <span>変化時間</span>
+          <select id="interval-select">
+            <option value="600000">10分</option>
+            <option value="900000" selected>15分</option>
+            <option value="1800000">30分</option>
+          </select>
+        </label>
+
+        <button id="next-topic" class="primary-button" type="button">
+          次の話題
+        </button>
+
+        <form id="topic-form" class="topic-form">
+          <label class="field">
+            <span>話題を追加</span>
+            <textarea id="topic-input" rows="4" maxlength="160" placeholder="話してみたいことを書いてください"></textarea>
+          </label>
+          <button class="secondary-button" type="submit">表示する</button>
+        </form>
+      </div>
+    </aside>
   </div>
+
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
