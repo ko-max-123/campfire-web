@@ -17,7 +17,7 @@ const topicInput = document.getElementById("topic-input");
 const ambientAudio = new FireAudio();
 const topics = [...defaultTopics];
 const LOOP_START_SECONDS = 3;
-const LOOP_END_BUFFER_SECONDS = 0.18;
+const LOOP_END_BUFFER_SECONDS = 1;
 
 let currentIndex = -1;
 let topicTimer = null;
