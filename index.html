@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Campfire Photo Inspired Final</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <canvas id="campfire-canvas" aria-label="焚き火アニメーション"></canvas>
+    <div class="ui-panel">
+      <button id="audio-toggle" type="button">音を再生</button>
+      <label class="control-row">
+        <span>火の強さ</span>
+        <input id="intensity-slider" type="range" min="0" max="1" step="0.01" value="0.84" />
+      </label>
+      <label class="control-row">
+        <span>風</span>
+        <input id="wind-slider" type="range" min="-1" max="1" step="0.01" value="-0.22" />
+      </label>
+      <label class="control-row">
+        <span>煙</span>
+        <input id="smoke-slider" type="range" min="0" max="1" step="0.01" value="0.72" />
+      </label>
+      <div class="hint">
+        写真のような「左へ流れる煙」「赤い火」「薪の黒煙」を感じられる最終版です。<br />
+        音はブラウザ内で生成します。
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
