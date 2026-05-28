@@ -8,7 +8,9 @@ const PLAYLIST = [
 
 const START_DELAY_SECONDS = 0.06;
 const CROSSFADE_SECONDS = 0.7;
-const SCHEDULE_AHEAD_SECONDS = 1.5;
+const SCHEDULE_AHEAD_SECONDS = 30;
+const SCHEDULER_INTERVAL_MS = 250;
+const RESUME_TIMEOUT_MS = 300;
 
 export class FireAudio {
   constructor() {
@@ -16,10 +18,12 @@ export class FireAudio {
     this.master = null;
     this.buffers = [];
     this.loadingPromise = null;
+    this.startingPromise = null;
     this.activeSources = new Set();
     this.currentIndex = 0;
     this.nextIndex = 0;
     this.nextStartTime = 0;
+    this.schedulerId = null;
     this.isPlaying = false;
     this.intensity = 0.84;
   }
@@ -40,15 +44,34 @@ export class FireAudio {
   }
 
   async start() {
+    if (this.startingPromise) return this.startingPromise;
+
+    this.startingPromise = this.startPlayback();
+
+    try {
+      return await this.startingPromise;
+    } finally {
+      this.startingPromise = null;
+    }
+  }
+
+  async startPlayback() {
     this.setup();
 
     if (this.ctx.state === "suspended") {
-      await this.ctx.resume();
+      await Promise.race([
+        this.ctx.resume(),
+        new Promise((resolve) => {
+          window.setTimeout(resolve, RESUME_TIMEOUT_MS);
+        }),
+      ]);
     }
+
+    if (this.ctx.state !== "running") return false;
 
     await this.loadBuffers();
 
-    if (this.buffers.length === 0) return;
+    if (this.buffers.length === 0) return false;
 
     this.stopSources();
     this.isPlaying = true;
@@ -56,15 +79,33 @@ export class FireAudio {
     this.nextStartTime = this.ctx.currentTime + START_DELAY_SECONDS;
     this.applyVolume();
     this.scheduleUpcoming();
+    this.startScheduler();
+    return true;
   }
 
   stop() {
     this.isPlaying = false;
+    this.stopScheduler();
     this.stopSources();
   }
 
   update() {
     this.scheduleUpcoming();
+  }
+
+  startScheduler() {
+    if (this.schedulerId) return;
+
+    this.schedulerId = window.setInterval(() => {
+      this.scheduleUpcoming();
+    }, SCHEDULER_INTERVAL_MS);
+  }
+
+  stopScheduler() {
+    if (!this.schedulerId) return;
+
+    window.clearInterval(this.schedulerId);
+    this.schedulerId = null;
   }
 
   setup() {

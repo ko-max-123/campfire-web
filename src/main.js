@@ -4,39 +4,24 @@ import { FireAudio } from "./audio.js";
 const canvas = document.getElementById("campfire-canvas");
 const ctx = canvas.getContext("2d");
 
-const audioButton = document.getElementById("audio-toggle");
-const intensitySlider = document.getElementById("intensity-slider");
-const windSlider = document.getElementById("wind-slider");
-const smokeSlider = document.getElementById("smoke-slider");
+const INITIAL_INTENSITY = 0.84;
+const INITIAL_WIND = -0.22;
+const INITIAL_SMOKE = 0.72;
 
 const scene = new CampfireScene(canvas, ctx);
 const audio = new FireAudio();
 
-scene.setIntensity(intensitySlider.value);
-scene.setWind(windSlider.value);
-scene.setSmoke(smokeSlider.value);
-audio.setIntensity(intensitySlider.value);
+scene.setIntensity(INITIAL_INTENSITY);
+scene.setWind(INITIAL_WIND);
+scene.setSmoke(INITIAL_SMOKE);
+audio.setIntensity(INITIAL_INTENSITY);
 
-function updateButton() {
-  audioButton.textContent = audio.isPlaying ? "音を停止" : "音を再生";
-}
-
-audioButton.addEventListener("click", async () => {
-  await audio.toggle();
-  updateButton();
-});
-
-intensitySlider.addEventListener("input", (e) => {
-  scene.setIntensity(e.target.value);
-  audio.setIntensity(e.target.value);
-});
-
-windSlider.addEventListener("input", (e) => {
-  scene.setWind(e.target.value);
-});
-
-smokeSlider.addEventListener("input", (e) => {
-  scene.setSmoke(e.target.value);
+startAudio();
+window.addEventListener("pointerdown", startAudio, { once: true });
+window.addEventListener("keydown", startAudio, { once: true });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  startAudio();
 });
 
 function resize() {
@@ -45,7 +30,6 @@ function resize() {
 
 window.addEventListener("resize", resize);
 resize();
-updateButton();
 
 let last = performance.now();
 function frame(now) {
@@ -57,3 +41,13 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+async function startAudio() {
+  if (audio.isPlaying) return;
+
+  try {
+    await audio.start();
+  } catch (error) {
+    console.warn("Audio autoplay failed.", error);
+  }
+}
