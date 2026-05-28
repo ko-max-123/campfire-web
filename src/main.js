@@ -7,6 +7,7 @@ const ctx = canvas.getContext("2d");
 const INITIAL_INTENSITY = 0.84;
 const INITIAL_WIND = -0.22;
 const INITIAL_SMOKE = 0.72;
+const TARGET_FRAME_MS = 1000 / 45;
 
 const scene = new CampfireScene(canvas, ctx);
 const audio = new FireAudio();
@@ -33,7 +34,12 @@ resize();
 
 let last = performance.now();
 function frame(now) {
-  const dt = Math.min((now - last) / 1000, 0.033);
+  if (now - last < TARGET_FRAME_MS) {
+    requestAnimationFrame(frame);
+    return;
+  }
+
+  const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
   scene.update(dt);
   scene.draw();

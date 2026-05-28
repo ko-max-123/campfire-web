@@ -8,8 +8,9 @@ export class CampfireScene {
     this.intensity = 0.84; this.wind = -0.22; this.smokeLevel = 0.72; this.time = 0;
     this.flames = []; this.embers = []; this.smokes = []; this.coals = []; this.groundStones = [];
     this.grassStems = []; this.ashFlecks = []; this.ringStones = []; this.logGrain = []; this.distantTrees = [];
+    this.staticCanvas = null; this.staticCtx = null;
     this.flameAcc = 0; this.emberAcc = 0; this.smokeAcc = 0;
-    this.maxFlames = 210; this.maxEmbers = 120; this.maxSmokes = 58;
+    this.maxFlames = 120; this.maxEmbers = 70; this.maxSmokes = 28;
     this.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
   }
   setIntensity(v) { this.intensity = clamp01(Number(v)); }
@@ -24,21 +25,22 @@ export class CampfireScene {
     this.canvas.style.width = `${width}px`; this.canvas.style.height = `${height}px`;
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     this.buildStaticElements();
+    this.buildStaticLayer();
   }
 
   buildStaticElements() {
     this.coals = [];
-    const coalCount = Math.max(36, Math.floor(this.width / 26));
+    const coalCount = Math.max(24, Math.floor(this.width / 42));
     for (let i = 0; i < coalCount; i += 1) {
       this.coals.push(new CoalGlow(this.fireX + randomRange(-140, 120), this.fireY + randomRange(-12, 34), randomRange(8, 22), randomRange(-6, 18)));
     }
     this.groundStones = [];
-    const count = Math.max(38, Math.floor(this.width / 28));
+    const count = Math.max(24, Math.floor(this.width / 44));
     for (let i = 0; i < count; i += 1) {
       this.groundStones.push({ x: Math.random() * this.width, y: this.height * (0.56 + Math.random() * 0.4), r: Math.random() * 3.6 + 0.6, a: Math.random() * 0.25 + 0.08 });
     }
     this.grassStems = [];
-    const grassCount = Math.max(90, Math.floor(this.width / 9));
+    const grassCount = Math.max(45, Math.floor(this.width / 18));
     for (let i = 0; i < grassCount; i += 1) {
       const yBand = Math.random() < 0.5 ? randomRange(0.08, 0.56) : randomRange(0.66, 0.98);
       this.grassStems.push({
@@ -50,7 +52,7 @@ export class CampfireScene {
       });
     }
     this.ashFlecks = [];
-    for (let i = 0; i < 80; i += 1) {
+    for (let i = 0; i < 42; i += 1) {
       this.ashFlecks.push({
         x: this.fireX + randomRange(-210, 210),
         y: this.fireY + randomRange(-4, 84),
@@ -61,7 +63,7 @@ export class CampfireScene {
       });
     }
     this.ringStones = [];
-    const ringCount = 22;
+    const ringCount = 14;
     for (let i = 0; i < ringCount; i += 1) {
       const angle = (i / ringCount) * Math.PI * 2 + randomRange(-0.08, 0.08);
       this.ringStones.push({
@@ -74,7 +76,7 @@ export class CampfireScene {
       });
     }
     this.logGrain = [];
-    for (let i = 0; i < 42; i += 1) {
+    for (let i = 0; i < 26; i += 1) {
       this.logGrain.push({
         offset: randomRange(-0.4, 0.4),
         length: randomRange(0.18, 0.92),
@@ -94,9 +96,9 @@ export class CampfireScene {
 
   update(dt) {
     this.time += dt;
-    const flameRate = 122 * (0.35 + this.intensity * 0.9);
-    const emberRate = 14 * (0.25 + this.intensity * 1.2);
-    const smokeRate = 9 * (0.2 + this.smokeLevel * 1.15);
+    const flameRate = 76 * (0.35 + this.intensity * 0.9);
+    const emberRate = 8 * (0.25 + this.intensity * 1.2);
+    const smokeRate = 4.6 * (0.2 + this.smokeLevel * 1.15);
     this.flameAcc += flameRate * dt; this.emberAcc += emberRate * dt; this.smokeAcc += smokeRate * dt;
 
     while (this.flameAcc >= 1) {
@@ -123,9 +125,27 @@ export class CampfireScene {
     }
   }
 
+  buildStaticLayer() {
+    this.staticCanvas = document.createElement("canvas");
+    this.staticCanvas.width = Math.floor(this.width * this.dpr);
+    this.staticCanvas.height = Math.floor(this.height * this.dpr);
+    this.staticCtx = this.staticCanvas.getContext("2d");
+    this.staticCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+    const liveCtx = this.ctx;
+    this.ctx = this.staticCtx;
+    this.drawBackground();
+    this.drawDirt(false);
+    this.drawAshBed();
+    this.drawStoneRing();
+    this.drawLogs();
+    this.ctx = liveCtx;
+  }
+
   draw() {
-    this.drawBackground(); this.drawDirt(); this.drawAshBed(); this.drawStoneRing(); this.drawGroundGlow();
-    this.drawLogs(); this.drawCoalBed(); this.drawCoreGlow(); this.drawHeatHaze();
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.ctx.drawImage(this.staticCanvas, 0, 0, this.width, this.height);
+    this.drawGroundGlow(); this.drawCoalBed(); this.drawCoreGlow(); this.drawHeatHaze();
     for (const smoke of this.smokes) smoke.draw(this.ctx);
     for (const flame of this.flames) flame.draw(this.ctx, this.time);
     for (const ember of this.embers) ember.draw(this.ctx);
@@ -162,7 +182,7 @@ export class CampfireScene {
     ctx.restore();
   }
 
-  drawDirt() {
+  drawDirt(animated = true) {
     const ctx = this.ctx;
     for (const s of this.groundStones) {
       ctx.fillStyle = `rgba(165,160,150,${s.a})`;
@@ -170,7 +190,7 @@ export class CampfireScene {
     }
     ctx.save(); ctx.lineWidth = 1.2;
     for (const stem of this.grassStems) {
-      const sway = noise2(stem.x * 0.02, this.time * 0.5) * 1.8;
+      const sway = animated ? noise2(stem.x * 0.02, this.time * 0.5) * 1.8 : 0;
       ctx.strokeStyle = `rgba(86,103,76,${stem.a})`;
       ctx.beginPath();
       ctx.moveTo(stem.x, stem.y);
@@ -237,12 +257,8 @@ export class CampfireScene {
       const len = Math.hypot(dx, dy);
       const nx = -dy / len, ny = dx / len;
       ctx.save(); ctx.lineCap = "round";
-      ctx.shadowColor = "rgba(0,0,0,0.34)";
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetY = 8;
       ctx.strokeStyle = baseColor; ctx.lineWidth = width;
       ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-      ctx.shadowBlur = 0;
 
       const bark = ctx.createLinearGradient(x1, y1, x2, y2);
       bark.addColorStop(0, "rgba(36,25,19,0.52)");
@@ -255,7 +271,7 @@ export class CampfireScene {
       ctx.beginPath(); ctx.moveTo(x1 + 2, y1 - 2); ctx.lineTo(x2 - 2, y2 + 2); ctx.stroke();
       ctx.strokeStyle = "rgba(218,150,84,0.16)";
       ctx.lineWidth = 1.2;
-      for (let i = 0; i < 7; i += 1) {
+      for (let i = 0; i < 4; i += 1) {
         const grain = this.logGrain[(i + grainOffset) % this.logGrain.length];
         const side = grain.offset * width;
         const t1 = grain.length * 0.72;
@@ -278,14 +294,14 @@ export class CampfireScene {
         ctx.lineWidth = 1.3;
         ctx.stroke();
         ctx.strokeStyle = "rgba(180,122,70,0.28)";
-        for (let r = 0.18; r < 0.48; r += 0.13) {
+        for (let r = 0.22; r < 0.48; r += 0.2) {
           ctx.beginPath();
           ctx.ellipse(0, 0, width * r, width * r * 0.7, 0, 0, Math.PI * 2);
           ctx.stroke();
         }
         ctx.restore();
       }
-      for (let i = 0; i < 5; i += 1) {
+      for (let i = 0; i < 3; i += 1) {
         const t = i / 4, cx = x1 + (x2 - x1) * t, cy = y1 + (y2 - y1) * t;
         const gg = ctx.createRadialGradient(cx, cy, 0, cx, cy, width * 1.1);
         const glowAlpha = (0.05 + this.intensity * 0.08) * (0.8 + noise2(i, this.time * 6 + i) * 0.25);
@@ -304,7 +320,7 @@ export class CampfireScene {
   drawCoalBed() {
     for (const coal of this.coals) coal.draw(this.ctx, this.time, this.intensity);
     const ctx = this.ctx;
-    for (let i = 0; i < 26; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const x = this.fireX + randomRange(-120, 110), y = this.fireY + randomRange(2, 46), alpha = 0.04 + this.intensity * 0.08;
       ctx.fillStyle = `rgba(220, 50, 14, ${alpha})`;
       ctx.beginPath(); ctx.arc(x, y, randomRange(1.2, 3.6), 0, Math.PI * 2); ctx.fill();
@@ -331,7 +347,7 @@ export class CampfireScene {
   drawHeatHaze() {
     const ctx = this.ctx; ctx.save(); ctx.globalAlpha = 0.05; ctx.strokeStyle = "rgba(255,210,168,0.28)"; ctx.lineWidth = 2;
     const baseX = this.fireX + this.wind * 32, baseY = this.fireY - 170;
-    for (let i = 0; i < 9; i += 1) {
+    for (let i = 0; i < 5; i += 1) {
       const oy = i * 18, ox = noise2(i, this.time * 2.6) * 16 + this.wind * 40;
       ctx.beginPath(); ctx.ellipse(baseX + ox, baseY + oy, 68 - i * 3, 28 - i * 1.4, 0.12 + this.wind * 0.08, 0.2, Math.PI - 0.2); ctx.stroke();
     }

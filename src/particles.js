@@ -55,8 +55,6 @@ export class FlameRibbon extends BaseParticle {
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    ctx.shadowColor = `rgba(255, 126, 28, ${this.alpha * 0.3})`;
-    ctx.shadowBlur = 10 + this.layer * 10;
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.moveTo(x0 - widthBottom, y0 + 2);
@@ -78,18 +76,6 @@ export class FlameRibbon extends BaseParticle {
     ctx.closePath();
     ctx.fill();
 
-    const edge = ctx.createLinearGradient(x0, y0, x3, y3);
-    edge.addColorStop(0, "rgba(255,210,80,0)");
-    edge.addColorStop(0.65, `rgba(120,22,0,${this.alpha * 0.12})`);
-    edge.addColorStop(1, "rgba(80,12,0,0)");
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = edge;
-    ctx.beginPath();
-    ctx.moveTo(x0 - widthBottom * 0.9, y0 + 2);
-    ctx.bezierCurveTo(x1 - widthMid * 1.05, y1, x2 - widthTop * 0.8, y2, x3, y3);
-    ctx.bezierCurveTo(x2 - widthTop * 0.28, y2 + 4, x1 - widthMid * 0.5, y1 + 9, x0 - widthBottom * 0.45, y0 + 2);
-    ctx.closePath();
-    ctx.fill();
     ctx.restore();
   }
 }
@@ -132,14 +118,10 @@ export class SmokePuff extends BaseParticle {
     this.size *= 1 + 0.36 * dt; this.alpha = Math.sin((1 - this.t) * Math.PI) * (0.08 + this.smokeLevel * 0.15);
   }
   draw(ctx) {
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size);
-    g.addColorStop(0, `rgba(178,174,168,${this.alpha})`);
-    g.addColorStop(0.38, `rgba(120,116,111,${this.alpha * 0.58})`);
-    g.addColorStop(1, "rgba(62,60,58,0)");
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rotation);
-    ctx.fillStyle = g;
+    ctx.fillStyle = `rgba(126,122,116,${this.alpha * 0.55})`;
     ctx.beginPath();
     ctx.ellipse(0, 0, this.size * 1.25, this.size * 0.76, 0, 0, Math.PI * 2);
     ctx.fill();
