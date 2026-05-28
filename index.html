@@ -13,8 +13,6 @@
       class="background-video"
       src="./movie/campfire.mp4"
       autoplay
-      muted
-      loop
       playsinline
       aria-label="焚き火の動画"
     ></video>
@@ -45,6 +43,11 @@
         <button id="next-topic" class="primary-button" type="button">
           次の話題
         </button>
+
+        <button id="sound-toggle" class="primary-button" type="button">
+          音を有効にする
+        </button>
+        <div id="sound-status" class="status-text" aria-live="polite"></div>
 
         <form id="topic-form" class="topic-form">
           <label class="field">

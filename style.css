@@ -137,6 +137,13 @@ textarea {
   font-size: 13px;
 }
 
+.status-text {
+  min-height: 18px;
+  color: rgba(247, 239, 231, 0.62);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 select,
 textarea {
   width: 100%;
