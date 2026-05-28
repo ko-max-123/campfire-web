@@ -1,3 +1,4 @@
+import { FireAudio } from "./audio.js";
 import { topics as defaultTopics } from "./topics.js";
 
 const video = document.getElementById("campfire-video");
@@ -13,8 +14,9 @@ const soundStatus = document.getElementById("sound-status");
 const topicForm = document.getElementById("topic-form");
 const topicInput = document.getElementById("topic-input");
 
+const ambientAudio = new FireAudio();
 const topics = [...defaultTopics];
-const LOOP_START_SECONDS = 1;
+const LOOP_START_SECONDS = 2;
 const LOOP_END_BUFFER_SECONDS = 0.18;
 
 let currentIndex = -1;
@@ -22,6 +24,7 @@ let topicTimer = null;
 let soundEnabled = true;
 let loopMonitorStarted = false;
 
+ambientAudio.setIntensity(0.55);
 startVideo();
 startLoopMonitor();
 showNextTopic();
@@ -74,12 +77,25 @@ function startVideo() {
   if (playPromise) {
     playPromise.catch(() => {
       video.muted = true;
+      ambientAudio.stop();
       video.play().catch(() => {});
       updateSoundState("音声付きの自動再生がブロックされました。");
     });
   }
 
+  startAmbientAudio().catch(() => {
+    updateSoundState("audio の音声を開始できませんでした。");
+  });
   updateSoundState();
+}
+
+async function startAmbientAudio() {
+  if (!soundEnabled || ambientAudio.isPlaying) return;
+
+  const didStart = await ambientAudio.start();
+  if (!didStart) {
+    updateSoundState("audio の音声は操作後に再生できます。");
+  }
 }
 
 function startLoopMonitor() {
@@ -119,6 +135,7 @@ function toggleSound() {
 
   soundEnabled = false;
   video.muted = true;
+  ambientAudio.stop();
   updateSoundState();
 }
 
@@ -129,16 +146,30 @@ async function enableSound() {
 
   try {
     await video.play();
-    updateSoundState();
+    const didStartAudio = await ambientAudio.start();
+    updateSoundState(didStartAudio ? "" : "動画音声を再生中です。audio の音声は開始できませんでした。");
   } catch (error) {
     updateSoundState("音を有効にできませんでした。もう一度押してください。");
   }
 }
 
 function updateSoundState(message = "") {
-  const isMuted = video.muted || video.volume === 0;
-  soundToggle.textContent = isMuted ? "音を有効にする" : "音をミュートする";
-  soundStatus.textContent = message || (isMuted ? "動画は再生中です。音はミュートされています。" : "動画の音を再生中です。");
+  const hasVideoSound = !video.muted && video.volume > 0;
+  const hasAmbientSound = ambientAudio.isPlaying;
+  const hasAnySound = hasVideoSound || hasAmbientSound;
+
+  soundToggle.textContent = hasAnySound ? "音をミュートする" : "音を有効にする";
+  if (message) {
+    soundStatus.textContent = message;
+  } else if (hasVideoSound && hasAmbientSound) {
+    soundStatus.textContent = "動画と audio の音を再生中です。";
+  } else if (hasVideoSound) {
+    soundStatus.textContent = "動画音声を再生中です。";
+  } else if (hasAmbientSound) {
+    soundStatus.textContent = "audio の音を再生中です。";
+  } else {
+    soundStatus.textContent = "動画は再生中です。音はミュートされています。";
+  }
 }
 
 function showNextTopic() {
