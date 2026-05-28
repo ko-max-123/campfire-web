@@ -17,26 +17,29 @@ class BaseParticle {
 export class FlameRibbon extends BaseParticle {
   constructor(x, y, intensity, wind) {
     super(x, y);
-    this.baseX = x + randomRange(-18, 10);
-    this.baseY = y + randomRange(-8, 5);
-    this.height = randomRange(90, 170) * (0.8 + intensity * 0.5);
-    this.width = randomRange(22, 42) * (0.8 + intensity * 0.35);
-    this.maxLife = randomRange(0.28, 0.72);
+    this.baseX = x + randomRange(-26, 18);
+    this.baseY = y + randomRange(-10, 7);
+    this.height = randomRange(78, 190) * (0.82 + intensity * 0.52);
+    this.width = randomRange(16, 46) * (0.78 + intensity * 0.38);
+    this.maxLife = randomRange(0.24, 0.66);
     this.drift = randomRange(-8, 18) + wind * randomRange(18, 58);
     this.curve = randomRange(10, 42) + wind * randomRange(25, 90);
     this.alpha = randomRange(0.75, 1);
+    this.hue = randomRange(-8, 12);
+    this.layer = Math.random();
   }
   update(dt, time, wind) {
     super.update(dt); if (this.dead) return;
     this.drift += wind * 12 * dt;
-    this.alpha = (1 - this.t) * 0.95;
+    this.alpha = Math.sin((1 - this.t) * Math.PI) * 0.95;
     this.baseX += wind * 24 * dt;
-    this.baseX += noise1(this.seed + time * 3.4) * 7 * dt;
+    this.baseX += noise1(this.seed + time * 4.2) * 12 * dt;
   }
   draw(ctx, time) {
-    const t = this.t, lifeEase = 1 - t, h = this.height * lifeEase, w = this.width * (0.85 + lifeEase * 0.25);
-    const leftCurl = noise2(this.seed, time * 2.6 + t * 8) * 18;
-    const rightCurl = noise2(this.seed + 20, time * 2.2 + t * 8) * 14;
+    const t = this.t, riseEase = 1 - t * 0.35, taper = Math.pow(1 - t, 0.72);
+    const h = this.height * riseEase, w = this.width * (0.42 + taper * 0.75);
+    const leftCurl = noise2(this.seed, time * 3.4 + t * 8) * 22;
+    const rightCurl = noise2(this.seed + 20, time * 2.8 + t * 8) * 18;
     const x0 = this.baseX, y0 = this.baseY;
     const x1 = x0 + this.curve * 0.24 + leftCurl, y1 = y0 - h * 0.28;
     const x2 = x0 + this.curve * 0.55 + rightCurl, y2 = y0 - h * 0.58;
@@ -44,14 +47,16 @@ export class FlameRibbon extends BaseParticle {
     const widthBottom = w, widthMid = w * 0.48, widthTop = Math.max(2, w * 0.12);
 
     const grad = ctx.createLinearGradient(x0, y0, x3, y3);
-    grad.addColorStop(0, `rgba(255,248,225,${this.alpha})`);
-    grad.addColorStop(0.18, `rgba(255,220,120,${this.alpha})`);
-    grad.addColorStop(0.5, `rgba(255,146,42,${this.alpha * 0.88})`);
-    grad.addColorStop(0.85, `rgba(255,90,22,${this.alpha * 0.54})`);
+    grad.addColorStop(0, `rgba(255,250,228,${this.alpha})`);
+    grad.addColorStop(0.14, `rgba(255,226,126,${this.alpha})`);
+    grad.addColorStop(0.46, `rgba(255,${142 + this.hue},38,${this.alpha * 0.88})`);
+    grad.addColorStop(0.82, `rgba(250,${76 + this.hue},18,${this.alpha * 0.52})`);
     grad.addColorStop(1, `rgba(120,20,0,${this.alpha * 0.10})`);
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
+    ctx.shadowColor = `rgba(255, 126, 28, ${this.alpha * 0.3})`;
+    ctx.shadowBlur = 10 + this.layer * 10;
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.moveTo(x0 - widthBottom, y0 + 2);
@@ -61,14 +66,28 @@ export class FlameRibbon extends BaseParticle {
     ctx.fill();
 
     const core = ctx.createLinearGradient(x0, y0, x3, y3);
-    core.addColorStop(0, `rgba(255,255,236,${this.alpha * 0.65})`);
-    core.addColorStop(0.5, `rgba(255,230,120,${this.alpha * 0.42})`);
-    core.addColorStop(1, `rgba(255,160,60,0)`);
+    core.addColorStop(0, `rgba(255,255,238,${this.alpha * 0.72})`);
+    core.addColorStop(0.4, `rgba(255,232,118,${this.alpha * 0.45})`);
+    core.addColorStop(0.88, `rgba(255,150,54,${this.alpha * 0.04})`);
+    core.addColorStop(1, "rgba(255,160,60,0)");
     ctx.fillStyle = core;
     ctx.beginPath();
     ctx.moveTo(x0 - widthBottom * 0.22, y0);
     ctx.bezierCurveTo(x1 - widthMid * 0.16, y1, x2 - widthTop * 0.12, y2, x3, y3);
     ctx.bezierCurveTo(x2 + widthTop * 0.12, y2 + 4, x1 + widthMid * 0.16, y1 + 6, x0 + widthBottom * 0.22, y0);
+    ctx.closePath();
+    ctx.fill();
+
+    const edge = ctx.createLinearGradient(x0, y0, x3, y3);
+    edge.addColorStop(0, "rgba(255,210,80,0)");
+    edge.addColorStop(0.65, `rgba(120,22,0,${this.alpha * 0.12})`);
+    edge.addColorStop(1, "rgba(80,12,0,0)");
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = edge;
+    ctx.beginPath();
+    ctx.moveTo(x0 - widthBottom * 0.9, y0 + 2);
+    ctx.bezierCurveTo(x1 - widthMid * 1.05, y1, x2 - widthTop * 0.8, y2, x3, y3);
+    ctx.bezierCurveTo(x2 - widthTop * 0.28, y2 + 4, x1 - widthMid * 0.5, y1 + 9, x0 - widthBottom * 0.45, y0 + 2);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -99,22 +118,32 @@ export class EmberSpark extends BaseParticle {
 export class SmokePuff extends BaseParticle {
   constructor(x, y, smokeLevel, wind) {
     super(x, y);
-    this.x += randomRange(-8, 8); this.y += randomRange(-8, 4);
-    this.vx = randomRange(-8, 8) + wind * randomRange(18, 40);
-    this.vy = randomRange(-44, -18); this.maxLife = randomRange(2.0, 4.3) * (0.85 + smokeLevel * 0.35);
-    this.size = randomRange(14, 32); this.smokeLevel = smokeLevel;
+    this.x += randomRange(-12, 12); this.y += randomRange(-10, 4);
+    this.vx = randomRange(-8, 8) + wind * randomRange(20, 48);
+    this.vy = randomRange(-50, -20); this.maxLife = randomRange(2.2, 5.0) * (0.85 + smokeLevel * 0.35);
+    this.size = randomRange(16, 36); this.smokeLevel = smokeLevel;
+    this.rotation = randomRange(0, Math.PI);
+    this.spin = randomRange(-0.28, 0.28);
   }
   update(dt, time, wind) {
     super.update(dt); if (this.dead) return;
-    this.x += noise1(this.seed + time * 1.8) * 8 * dt + wind * 16 * dt;
-    this.size *= 1 + 0.42 * dt; this.alpha = (1 - this.t) * (0.08 + this.smokeLevel * 0.16);
+    this.x += noise1(this.seed + time * 1.8) * 10 * dt + wind * 18 * dt;
+    this.rotation += this.spin * dt;
+    this.size *= 1 + 0.36 * dt; this.alpha = Math.sin((1 - this.t) * Math.PI) * (0.08 + this.smokeLevel * 0.15);
   }
   draw(ctx) {
-    const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-    g.addColorStop(0, `rgba(170,170,170,${this.alpha})`);
-    g.addColorStop(0.45, `rgba(132,132,132,${this.alpha * 0.58})`);
-    g.addColorStop(1, "rgba(85,85,85,0)");
-    ctx.save(); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size);
+    g.addColorStop(0, `rgba(178,174,168,${this.alpha})`);
+    g.addColorStop(0.38, `rgba(120,116,111,${this.alpha * 0.58})`);
+    g.addColorStop(1, "rgba(62,60,58,0)");
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, this.size * 1.25, this.size * 0.76, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 }
 
